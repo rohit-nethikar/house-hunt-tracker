@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2a78d6">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
 <body>
 <header class="app-header">
@@ -24,10 +25,12 @@
 <nav class="tabs" id="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="houses">Houses</button>
+  <button class="tab-btn" data-tab="apartments">Apartments</button>
   <button class="tab-btn" data-tab="schools">Schools</button>
   <button class="tab-btn" data-tab="tasks">Tasks</button>
   <button class="tab-btn" data-tab="calendar">Calendar</button>
   <button class="tab-btn" data-tab="activity">Activity</button>
+  <button class="tab-btn" data-tab="map">Map</button>
 </nav>
 
 <main id="app">
@@ -120,15 +123,64 @@
     <div id="housesTable" class="table-wrap"></div>
   </section>
 
+  <!-- ===================== APARTMENTS ===================== -->
+  <section id="tab-apartments" class="tab-panel">
+    <div class="toolbar">
+      <input type="text" id="apartmentSearch" placeholder="Search name, address, notes…">
+      <select id="apartmentStatusFilter"><option value="">All statuses</option></select>
+      <select id="apartmentCityFilter"><option value="">All cities</option></select>
+      <select id="apartmentLeaseTermFilter"><option value="">All lease terms</option></select>
+      <input type="number" id="apartmentRentMaxFilter" placeholder="Max rent ($)" min="0" style="width:150px;">
+      <button class="btn primary" id="addApartmentBtn">+ Add Apartment</button>
+      <button class="btn" id="exportApartmentsBtn">Export CSV</button>
+    </div>
+    <div id="apartmentsTable" class="table-wrap"></div>
+  </section>
+
   <!-- ===================== SCHOOLS ===================== -->
   <section id="tab-schools" class="tab-panel">
     <div class="toolbar">
       <input type="text" id="schoolSearch" placeholder="Search name, notes…">
       <select id="schoolTypeFilter"><option value="">All types</option></select>
+      <select id="schoolCityFilter"><option value="">All cities</option></select>
+      <select id="schoolPriorityFilter"><option value="">All priorities</option></select>
+      <input type="number" id="schoolCommuteMaxFilter" placeholder="Max commute (min)" min="0" max="60" style="width: 150px;">
+      <input type="number" id="schoolMathMinFilter" placeholder="Min math %" min="0" max="100" style="width: 140px;">
+      <input type="number" id="schoolReadingMinFilter" placeholder="Min reading %" min="0" max="100" style="width: 150px;">
       <button class="btn primary" id="addSchoolBtn">+ Add School</button>
       <button class="btn" id="exportSchoolsBtn">Export CSV</button>
     </div>
     <div id="schoolsTable" class="table-wrap"></div>
+  </section>
+
+  <!-- ===================== MAP ===================== -->
+  <section id="tab-map" class="tab-panel">
+    <div class="toolbar">
+      <button class="btn" id="geocodeAllBtn">Geocode All</button>
+      <span id="geocodeAllStatus" class="muted-note"></span>
+    </div>
+    <div class="dash-grid two-col">
+      <div class="card">
+        <h2>All Houses &amp; Schools</h2>
+        <div id="mapContainer"></div>
+        <div class="legend-row" style="margin-top:10px;">
+          <span class="legend-chip" style="background:var(--series-1);color:#fff;">House</span>
+          <span class="legend-chip" style="background:var(--series-3);color:#fff;">School</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Distance Between a House and a School</h2>
+        <div class="form-field full" style="margin-bottom:10px;">
+          <label for="distanceHouseSelect">House</label>
+          <select id="distanceHouseSelect"><option value="">— select a house —</option></select>
+        </div>
+        <div class="form-field full" style="margin-bottom:10px;">
+          <label for="distanceSchoolSelect">School</label>
+          <select id="distanceSchoolSelect"><option value="">— select a school —</option></select>
+        </div>
+        <div id="distanceResult" class="empty-note">Select a house and a school to see the straight-line distance.</div>
+      </div>
+    </div>
   </section>
 
   <!-- ===================== TASKS ===================== -->
@@ -195,6 +247,7 @@
 
 <div id="printArea"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="app.js"></script>
 </body>
 </html>

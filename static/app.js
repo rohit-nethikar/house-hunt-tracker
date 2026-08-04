@@ -2,7 +2,8 @@
 
 // ---------- constants ----------
 const HOUSE_STATUSES = ['Researching', 'Showing Scheduled', 'Showing Complete', 'Offer Submitted', 'Under Contract', 'Rejected', 'Purchased'];
-const SCHOOL_TYPES = ['Elementary', 'Middle', 'High'];
+const SCHOOL_TYPES = ['Elementary', 'Middle', 'High', 'School'];
+const SCHOOL_PRIORITIES = ['Very High', 'High', 'Moderate-High', 'Medium', 'Low'];
 const CSPF_RATINGS = ['Distinguished', 'Accredited', 'Accredited-Improvement', 'Accredited-Priority-Improvement', 'Accredited-Turnaround'];
 const TRANSPORT_OPTIONS = ['Bus Provided', 'Bus for Fee', 'None'];
 const ENROLLMENT_METHODS = ['Boundary', 'School Choice', 'Lottery', 'Application'];
@@ -10,6 +11,9 @@ const TASK_STATUSES = ['Not Started', 'In Progress', 'Done'];
 const TASK_PRIORITIES = ['Low', 'Medium', 'High'];
 const TASK_RELATED_TYPES = ['House', 'School', 'General'];
 const FINANCING_STATUSES = ['Not Started', 'Pre-approved', 'Approved', 'Locked'];
+const APARTMENT_STATUSES = ['Researching', 'Contacted', 'Application Submitted', 'Approved', 'Lease Signed', 'Not Available', 'Rejected'];
+const LEASE_TERM_OPTIONS = ['Month-to-Month', '3 Months', '6 Months', '12 Months', 'Lease Takeover/Assignment', 'Other'];
+const EARLY_TERMINATION_OPTIONS = ['Confirmed Available', 'Not Available', 'Unknown — Ask Leasing Office'];
 const ACTIVITY_LIMIT = 300;
 
 const STATUS_COLORS = {
@@ -20,6 +24,16 @@ const STATUS_COLORS = {
   'Under Contract': 'var(--series-7)',
   'Rejected': 'var(--series-8)',
   'Purchased': 'var(--series-6)',
+};
+
+const APARTMENT_STATUS_COLORS = {
+  'Researching': 'var(--series-1)',
+  'Contacted': 'var(--series-2)',
+  'Application Submitted': 'var(--series-4)',
+  'Approved': 'var(--series-3)',
+  'Lease Signed': 'var(--series-6)',
+  'Not Available': 'var(--series-8)',
+  'Rejected': 'var(--series-8)',
 };
 
 const CSPF_POINTS = {
@@ -47,17 +61,23 @@ const SCHOOL_FACTORS = [
 ];
 
 // ---------- state ----------
-let state = { houses: [], schools: [], tasks: [], weights: { house: {}, school: {}, enrollment: {} }, activity: [], settings: { commuteDestination: '' } };
+let state = { houses: [], schools: [], tasks: [], apartments: [], weights: { house: {}, school: {}, enrollment: {} }, activity: [], settings: { commuteDestination: '' } };
 let appConfig = { geocodingProvider: 'nominatim', commuteAvailable: false };
 const sortState = {
   houses: { key: 'address', dir: 'asc' },
   schools: { key: 'name', dir: 'asc' },
   tasks: { key: 'dueDate', dir: 'asc' },
+  apartments: { key: 'address', dir: 'asc' },
 };
 const compareSelection = new Set();
 const today0 = new Date();
 const calendarState = { year: today0.getFullYear(), month: today0.getMonth() };
 const CALENDAR_EVENT_COLORS = { Showing: 'var(--series-2)', 'Follow-up': 'var(--series-7)', Tour: 'var(--series-3)', Task: 'var(--series-1)' };
+
+let mapInstance = null;
+let mapHouseLayer = null;
+let mapSchoolLayer = null;
+let mapInitialized = false;
 
 // ---------- utilities ----------
 function numOrNull(v) { return (typeof v === 'number' && !isNaN(v)) ? v : null; }
@@ -126,7 +146,7 @@ function scheduleSave() {
 async function doSave() {
   const el = document.getElementById('saveStatus');
   try {
-    const res = await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    const res = await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(state) });
     if (!res.ok) throw new Error('save failed');
     const saved = await res.json();
     if (Array.isArray(saved.scoreHistory)) {
@@ -143,16 +163,17 @@ async function doSave() {
   }
 }
 async function loadState() {
-  const res = await fetch('/api/state');
+  const res = await fetch('/api/state', { credentials: 'include' });
   state = await res.json();
   if (!Array.isArray(state.activity)) state.activity = [];
   if (!Array.isArray(state.scoreHistory)) state.scoreHistory = [];
   if (!Array.isArray(state.weightPresets)) state.weightPresets = [];
+  if (!Array.isArray(state.apartments)) state.apartments = [];
   if (!state.settings || typeof state.settings !== 'object') state.settings = {};
   if (typeof state.settings.commuteDestination !== 'string') state.settings.commuteDestination = '';
   state.houses.forEach(h => { if (!Array.isArray(h.tags)) h.tags = []; });
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch('/api/config', { credentials: 'include' });
     appConfig = res.ok ? await res.json() : appConfig;
   } catch (e) { /* config endpoint unreachable — integrations UI just shows as unavailable */ }
 }
@@ -378,12 +399,84 @@ function exportHouses() {
   downloadCsv('houses.csv', headers, rows.map(h => [h.address, h.listingUrl, h.city, h.price, h.estMonthlyPayment, h.propertyTax, h.hoa, h.sqft, h.bedrooms, h.bathrooms, h.lotSize, h.yearBuilt, h.condition, h.requiredRepairs, schoolNameById(h.elementarySchoolId), schoolNameById(h.middleSchoolId), schoolNameById(h.highSchoolId), h.commuteTimeMin, h.showingDate, h.status, h.followUpDate, (h.tags || []).join('; '), h.offerPrice, h.offerDate, h.counterPrice, h.contingencies, h.closingDate, h.financingStatus, h.pros, h.cons, h.notes]));
 }
 
+// ---------- Apartments ----------
+function getFilteredApartments() {
+  const q = document.getElementById('apartmentSearch').value.trim().toLowerCase();
+  const statusF = document.getElementById('apartmentStatusFilter').value;
+  const cityF = document.getElementById('apartmentCityFilter').value;
+  const leaseTermF = document.getElementById('apartmentLeaseTermFilter').value;
+  const rentMaxF = (() => { const v = document.getElementById('apartmentRentMaxFilter')?.value; return v === '' ? null : Number(v); })();
+
+  let list = state.apartments.filter(a => {
+    if (statusF && a.status !== statusF) return false;
+    if (cityF && a.city !== cityF) return false;
+    if (leaseTermF && a.leaseTerm !== leaseTermF) return false;
+    if (rentMaxF !== null && (a.rent === null || a.rent === undefined || a.rent > rentMaxF)) return false;
+    if (q) {
+      const hay = [a.name, a.address, a.city, a.leasingCompany, a.notes].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const { key, dir } = sortState.apartments;
+  return list.slice().sort((a, b) => compareValues(a[key], b[key], dir));
+}
+
+function populateApartmentFilterOptions() {
+  populateSelectPreserving(document.getElementById('apartmentStatusFilter'), APARTMENT_STATUSES, 'All statuses');
+  populateSelectPreserving(document.getElementById('apartmentCityFilter'), [...new Set(state.apartments.map(a => a.city).filter(Boolean))].sort(), 'All cities');
+  populateSelectPreserving(document.getElementById('apartmentLeaseTermFilter'), [...new Set(state.apartments.map(a => a.leaseTerm).filter(Boolean))], 'All lease terms');
+}
+
+function renderApartments() {
+  populateApartmentFilterOptions();
+  const rows = getFilteredApartments();
+  const columns = [
+    { label: 'Complex Name', sortKey: 'name', wrap: true, render: a => escapeHtml(a.name || a.address || '') },
+    { label: 'Address', sortKey: 'address', wrap: true, render: a => escapeHtml(a.address || '') },
+    { label: 'City', sortKey: 'city', render: a => escapeHtml(a.city || '') },
+    { label: 'Rent/mo', sortKey: 'rent', render: a => fmtMoney(a.rent) },
+    { label: 'Lease Term', sortKey: 'leaseTerm', render: a => escapeHtml(a.leaseTerm || '') },
+    { label: 'Available', sortKey: 'availabilityDate', render: a => fmtDate(a.availabilityDate) },
+    { label: 'Status', sortKey: 'status', render: a => escapeHtml(a.status || '') },
+    { label: 'Contact', wrap: true, render: a => {
+      const parts = [];
+      if (a.leasingCompany) parts.push(`<strong>${escapeHtml(a.leasingCompany)}</strong>`);
+      if (a.contactEmail) parts.push(`<a href="mailto:${escapeAttr(a.contactEmail)}">${escapeHtml(a.contactEmail)}</a>`);
+      if (a.contactPhone) parts.push(`<a href="tel:${escapeAttr(a.contactPhone)}">${escapeHtml(a.contactPhone)}</a>`);
+      return parts.join('<br>') || '—';
+    }},
+    { label: '', render: a => `<button class="btn small edit-btn" data-id="${a.id}">Edit</button>` },
+  ];
+  renderTable(document.getElementById('apartmentsTable'), columns, rows, sortState.apartments, renderApartments);
+  document.getElementById('apartmentsTable').querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openApartmentModal(state.apartments.find(x => x.id === btn.dataset.id)));
+  });
+}
+
+function exportApartments() {
+  const rows = getFilteredApartments();
+  const headers = ['Complex Name', 'Address', 'City', 'Zip', 'Listing URL', 'Rent', 'Bedrooms', 'Bathrooms', 'Sqft', 'Lease Term', 'Early Termination', 'Early Termination Details', 'School District', 'Availability Date', 'Status', 'Leasing Company', 'Contact Email', 'Contact Phone', 'Pros', 'Cons', 'Notes', 'Tags'];
+  downloadCsv('apartments.csv', headers, rows.map(a => [a.name, a.address, a.city, a.zip, a.listingUrl, a.rent, a.bedrooms, a.bathrooms, a.sqft, a.leaseTerm, a.earlyTermination, a.earlyTerminationDetails, a.schoolDistrict, a.availabilityDate, a.status, a.leasingCompany, a.contactEmail, a.contactPhone, a.pros, a.cons, a.notes, (a.tags || []).join('; ')]));
+}
+
 // ---------- Schools ----------
 function getFilteredSchools() {
   const q = document.getElementById('schoolSearch').value.trim().toLowerCase();
   const typeF = document.getElementById('schoolTypeFilter').value;
+  const cityF = document.getElementById('schoolCityFilter').value;
+  const priorityF = document.getElementById('schoolPriorityFilter').value;
+  const commuteMaxF = (() => { const v = document.getElementById('schoolCommuteMaxFilter')?.value; return v === '' ? null : Number(v); })();
+  const mathMinF = (() => { const v = document.getElementById('schoolMathMinFilter')?.value; return v === '' ? null : Number(v); })();
+  const readingMinF = (() => { const v = document.getElementById('schoolReadingMinFilter')?.value; return v === '' ? null : Number(v); })();
+
   let list = state.schools.filter(s => {
     if (typeF && s.type !== typeF) return false;
+    if (cityF && s.city !== cityF) return false;
+    if (priorityF && s.priority !== priorityF) return false;
+    if (commuteMaxF !== null && (s.commute === null || s.commute === undefined || s.commute > commuteMaxF)) return false;
+    if (mathMinF !== null && (s.mathProficiency === null || s.mathProficiency === undefined || s.mathProficiency < mathMinF)) return false;
+    if (readingMinF !== null && (s.readingProficiency === null || s.readingProficiency === undefined || s.readingProficiency < readingMinF)) return false;
     if (q) {
       const hay = [s.name, s.notes, s.pros, s.cons].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
@@ -396,6 +489,16 @@ function getFilteredSchools() {
 
 function populateSchoolFilterOptions() {
   populateSelectPreserving(document.getElementById('schoolTypeFilter'), SCHOOL_TYPES, 'All types');
+
+  // Get unique cities from schools
+  const cities = [...new Set(state.schools.map(s => s.city).filter(Boolean))].sort();
+  populateSelectPreserving(document.getElementById('schoolCityFilter'), cities, 'All cities');
+
+  // Get unique priorities from schools
+  const priorities = [...new Set(state.schools.map(s => s.priority).filter(Boolean))];
+  const priorityOrder = ['Very High', 'High', 'Moderate-High', 'Medium', 'Low'];
+  const sortedPriorities = priorityOrder.filter(p => priorities.includes(p));
+  populateSelectPreserving(document.getElementById('schoolPriorityFilter'), sortedPriorities, 'All priorities');
 }
 
 function renderSchools() {
@@ -405,12 +508,18 @@ function renderSchools() {
   const enroll = computeEnrollmentScores(state.schools, state.weights.enrollment);
   const columns = [
     { label: 'Name', sortKey: 'name', wrap: true, render: s => escapeHtml(s.name) },
+    { label: 'City', sortKey: 'city', render: s => escapeHtml(s.city || '') },
+    { label: 'Commute', sortKey: 'commute', render: s => (s.commute ? `${s.commute} min` : '—') },
+    { label: 'Math %', sortKey: 'mathProficiency', render: s => (s.mathProficiency ? `${s.mathProficiency}%` : '—') },
+    { label: 'Reading %', sortKey: 'readingProficiency', render: s => (s.readingProficiency ? `${s.readingProficiency}%` : '—') },
     { label: 'Type', sortKey: 'type', render: s => escapeHtml(s.type || '') },
-    { label: 'CSPF Rating', sortKey: 'cspfRating', render: s => escapeHtml(s.cspfRating || '') },
-    { label: 'Achievement', sortKey: 'academicAchievement', render: s => s.academicAchievement ?? '—' },
-    { label: 'Growth', sortKey: 'academicGrowth', render: s => s.academicGrowth ?? '—' },
+    { label: 'Rankings', sortKey: 'greatSchoolsRating', render: s => {
+      const gs = s.greatSchoolsRating ? `GS: ${s.greatSchoolsRating}/10` : '';
+      const niche = s.nicheRanking ? `Niche: ${s.nicheRanking}` : '';
+      return [gs, niche].filter(x => x).join(' | ') || '—';
+    } },
+    { label: 'Priority', sortKey: 'priority', render: s => escapeHtml(s.priority || '') },
     { label: 'Enrollment', sortKey: 'enrollmentMethod', render: s => escapeHtml(s.enrollmentMethod || '') },
-    { label: 'Waitlist', sortKey: 'waitlistStatus', render: s => escapeHtml(s.waitlistStatus || '') },
     { label: 'Tour Date', sortKey: 'tourDate', render: s => fmtDate(s.tourDate) },
     { label: 'School Score', wrap: true, render: s => renderScoreCell(scores[s.id], getScoreHistoryPoints('school', s.id)) },
     { label: 'Enroll. Prob.', wrap: true, render: s => renderScoreCell(enroll[s.id], getScoreHistoryPoints('enrollment', s.id)) },
@@ -1140,23 +1249,23 @@ function fieldHtml({ key, label, type, value, options, full }) {
 
 // ---------- house file attachments ----------
 async function fetchHouseFiles(houseId) {
-  const res = await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`);
+  const res = await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`, { credentials: 'include' });
   return res.ok ? res.json() : [];
 }
 async function uploadHouseFile(houseId, file) {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`, { method: 'POST', body: formData });
+  const res = await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`, { method: 'POST', credentials: 'include', body: formData });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     alert(err.error || `Upload failed for ${file.name}.`);
   }
 }
 async function deleteHouseFile(houseId, filename) {
-  await fetch(`/api/houses/${encodeURIComponent(houseId)}/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+  await fetch(`/api/houses/${encodeURIComponent(houseId)}/files/${encodeURIComponent(filename)}`, { method: 'DELETE', credentials: 'include' });
 }
 async function deleteAllHouseFiles(houseId) {
-  await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`, { method: 'DELETE' }).catch(() => {});
+  await fetch(`/api/houses/${encodeURIComponent(houseId)}/files`, { method: 'DELETE', credentials: 'include' }).catch(() => {});
 }
 function fileDisplayName(name) { return name.replace(/^\d+-/, ''); }
 function fileUrl(houseId, name) { return `/uploads/${encodeURIComponent(houseId)}/${encodeURIComponent(name)}`; }
@@ -1200,19 +1309,19 @@ function haversineMiles(lat1, lng1, lat2, lng2) {
 }
 
 async function geocodeAddress(address) {
-  const res = await fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address }) });
+  const res = await fetch('/api/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ address }) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Geocoding failed.');
   return data;
 }
 async function fetchCommuteTime(origin, destination) {
-  const res = await fetch('/api/commute-time', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ origin, destination }) });
+  const res = await fetch('/api/commute-time', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ origin, destination }) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Commute time lookup failed.');
   return data.minutes;
 }
 async function importListing(url) {
-  const res = await fetch('/api/import-listing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+  const res = await fetch('/api/import-listing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ url }) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Import failed.');
   return data;
@@ -1232,6 +1341,190 @@ function wireGeocodeButton(btnId, statusId, addressFn, onResult) {
       statusEl.textContent = e.message;
     }
   });
+}
+
+// ---------- map tab ----------
+function getHouseAddress(h) {
+  return `${h.address}${h.city ? ', ' + h.city + ', CO' : ', Colorado'}`;
+}
+function getSchoolAddress(s) {
+  const addr = s.location || s.address || '';
+  const city = s.city;
+  if (!city || addr.includes(city)) return addr;
+  return addr ? `${addr}, ${city}` : city;
+}
+async function geocodeMissingItems(items, addressFn, onProgress) {
+  const missing = items.filter(item => typeof item.lat !== 'number' || typeof item.lng !== 'number');
+  let done = 0;
+  for (const item of missing) {
+    try {
+      const addr = addressFn(item);
+      if (addr) {
+        const result = await geocodeAddress(addr);
+        item.lat = result.lat;
+        item.lng = result.lng;
+      }
+    } catch (e) {
+      // skip this item, don't abort
+    }
+    done++;
+    onProgress(done, missing.length);
+    if (appConfig.geocodingProvider === 'nominatim' && done < missing.length) {
+      await new Promise(r => setTimeout(r, 1100));
+    }
+  }
+}
+async function geocodeAllMissing() {
+  const missingHouses = state.houses.filter(h => h.address && (typeof h.lat !== 'number' || typeof h.lng !== 'number'));
+  const missingSchools = state.schools.filter(s => getSchoolAddress(s) && (typeof s.lat !== 'number' || typeof s.lng !== 'number'));
+  const totalMissing = missingHouses.length + missingSchools.length;
+
+  if (totalMissing === 0) {
+    document.getElementById('geocodeAllStatus').textContent = state.houses.length + state.schools.length === 0 ? 'Nothing to geocode.' : 'Everything is already geocoded.';
+    return;
+  }
+
+  let globalDone = 0;
+  const statusEl = document.getElementById('geocodeAllStatus');
+  const updateProgress = (done, total) => {
+    globalDone++;
+    statusEl.textContent = `Geocoding ${globalDone} of ${totalMissing}…`;
+  };
+
+  await geocodeMissingItems(missingHouses, getHouseAddress, updateProgress);
+  await geocodeMissingItems(missingSchools, getSchoolAddress, updateProgress);
+
+  scheduleSave();
+  renderMapMarkers();
+  populateDistanceSelects();
+  const newMissing = state.houses.filter(h => h.address && (typeof h.lat !== 'number' || typeof h.lng !== 'number')).length +
+                     state.schools.filter(s => getSchoolAddress(s) && (typeof s.lat !== 'number' || typeof s.lng !== 'number')).length;
+  const geocoded = totalMissing - newMissing;
+  statusEl.textContent = `Geocoded ${geocoded} of ${totalMissing}${newMissing > 0 ? ` (${newMissing} could not be located)` : ''}.`;
+}
+function initMapTabOnce() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+
+  mapInstance = L.map('mapContainer');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(mapInstance);
+  mapInstance.setView([39.5, -104.9], 10);
+
+  mapHouseLayer = L.layerGroup().addTo(mapInstance);
+  mapSchoolLayer = L.layerGroup().addTo(mapInstance);
+
+  renderMapMarkers();
+}
+function renderMapMarkers() {
+  if (!mapInstance) return;
+
+  mapHouseLayer.clearLayers();
+  mapSchoolLayer.clearLayers();
+
+  const bounds = [];
+
+  state.houses.forEach(h => {
+    if (typeof h.lat === 'number' && typeof h.lng === 'number') {
+      const marker = L.circleMarker([h.lat, h.lng], {
+        radius: 8,
+        color: '#2a78d6',
+        fillColor: '#2a78d6',
+        fillOpacity: 0.85,
+        weight: 2
+      }).bindPopup(`<strong>${escapeHtml(h.address)}</strong><br>${escapeHtml(h.city || '')}`);
+      mapHouseLayer.addLayer(marker);
+      bounds.push([h.lat, h.lng]);
+    }
+  });
+
+  state.schools.forEach(s => {
+    if (typeof s.lat === 'number' && typeof s.lng === 'number') {
+      const marker = L.circleMarker([s.lat, s.lng], {
+        radius: 8,
+        color: '#1baf7a',
+        fillColor: '#1baf7a',
+        fillOpacity: 0.85,
+        weight: 2
+      }).bindPopup(`<strong>${escapeHtml(s.name)}</strong><br>${escapeHtml(getSchoolAddress(s))}`);
+      mapSchoolLayer.addLayer(marker);
+      bounds.push([s.lat, s.lng]);
+    }
+  });
+
+  if (bounds.length > 0) {
+    mapInstance.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+  }
+}
+function populateDistanceSelects() {
+  const houseSelect = document.getElementById('distanceHouseSelect');
+  const schoolSelect = document.getElementById('distanceSchoolSelect');
+
+  const houseOpts = [{ value: '', label: '— select a house —' }, ...state.houses.map(h => ({ value: h.id, label: getHouseAddress(h) }))];
+  const schoolOpts = [{ value: '', label: '— select a school —' }, ...state.schools.map(s => ({ value: s.id, label: s.name }))];
+
+  const currentHouse = houseSelect.value;
+  const currentSchool = schoolSelect.value;
+
+  houseSelect.innerHTML = houseOpts.map(o => `<option value="${escapeAttr(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+  schoolSelect.innerHTML = schoolOpts.map(o => `<option value="${escapeAttr(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+
+  if (houseOpts.some(o => o.value === currentHouse)) houseSelect.value = currentHouse;
+  if (schoolOpts.some(o => o.value === currentSchool)) schoolSelect.value = currentSchool;
+}
+async function renderDistancePanel() {
+  const houseId = document.getElementById('distanceHouseSelect').value;
+  const schoolId = document.getElementById('distanceSchoolSelect').value;
+  const resultEl = document.getElementById('distanceResult');
+
+  if (!houseId || !schoolId) {
+    resultEl.innerHTML = 'Select a house and a school to see the straight-line distance.';
+    return;
+  }
+
+  const house = state.houses.find(h => h.id === houseId);
+  const school = state.schools.find(s => s.id === schoolId);
+
+  if (!house || !school) return;
+
+  // Geocode on the fly if needed
+  if (typeof house.lat !== 'number' || typeof house.lng !== 'number') {
+    resultEl.innerHTML = '<div class="empty-note">Locating house…</div>';
+    try {
+      const result = await geocodeAddress(getHouseAddress(house));
+      house.lat = result.lat;
+      house.lng = result.lng;
+      scheduleSave();
+      renderMapMarkers();
+    } catch (e) {
+      resultEl.innerHTML = `<div class="empty-note">Could not locate house: ${escapeHtml(e.message)}</div>`;
+      return;
+    }
+  }
+
+  if (typeof school.lat !== 'number' || typeof school.lng !== 'number') {
+    resultEl.innerHTML = '<div class="empty-note">Locating school…</div>';
+    try {
+      const result = await geocodeAddress(getSchoolAddress(school));
+      school.lat = result.lat;
+      school.lng = result.lng;
+      scheduleSave();
+      renderMapMarkers();
+    } catch (e) {
+      resultEl.innerHTML = `<div class="empty-note">Could not locate school: ${escapeHtml(e.message)}</div>`;
+      return;
+    }
+  }
+
+  // Both have coordinates now, compute distance
+  const miles = haversineMiles(house.lat, house.lng, school.lat, school.lng);
+  resultEl.innerHTML = `<div class="distance-result-value">${miles.toFixed(1)} mi</div><div class="distance-result-sub">Straight-line distance from ${escapeHtml(house.address)} to ${escapeHtml(school.name)}</div>`;
+}
+function renderMap() {
+  populateDistanceSelects();
+  renderMapMarkers();
 }
 
 function openHouseModal(house) {
@@ -1427,6 +1720,65 @@ function openHouseModal(house) {
   });
 }
 
+function openApartmentModal(apartment) {
+  const isNew = !apartment;
+  const a = apartment ? { ...apartment } : {
+    id: uid('apt'), name: '', address: '', city: '', zip: '', listingUrl: '',
+    rent: '', bedrooms: 1, bathrooms: '', sqft: '',
+    leaseTerm: 'Month-to-Month', earlyTermination: 'Unknown — Ask Leasing Office', earlyTerminationDetails: '',
+    schoolDistrict: 'Douglas County RE-1', availabilityDate: '', status: 'Researching',
+    leasingCompany: '', contactEmail: '', contactPhone: '',
+    pros: '', cons: '', notes: '', tags: [],
+  };
+  const body = `<div class="form-grid">
+    ${fieldHtml({ key: 'name', label: 'Complex Name', type: 'text', value: a.name, full: true })}
+    ${fieldHtml({ key: 'address', label: 'Address', type: 'text', value: a.address, full: true })}
+    ${fieldHtml({ key: 'city', label: 'City', type: 'text', value: a.city })}
+    ${fieldHtml({ key: 'zip', label: 'Zip Code', type: 'text', value: a.zip })}
+    ${fieldHtml({ key: 'listingUrl', label: 'Listing URL', type: 'text', value: a.listingUrl, full: true })}
+    ${fieldHtml({ key: 'rent', label: 'Monthly Rent ($)', type: 'number', value: a.rent })}
+    ${fieldHtml({ key: 'bedrooms', label: 'Bedrooms', type: 'number', value: a.bedrooms })}
+    ${fieldHtml({ key: 'bathrooms', label: 'Bathrooms', type: 'number', value: a.bathrooms })}
+    ${fieldHtml({ key: 'sqft', label: 'Square Footage', type: 'number', value: a.sqft })}
+    ${fieldHtml({ key: 'leaseTerm', label: 'Lease Term', type: 'select', value: a.leaseTerm, options: LEASE_TERM_OPTIONS })}
+    ${fieldHtml({ key: 'earlyTermination', label: 'Early Termination Option', type: 'select', value: a.earlyTermination, options: EARLY_TERMINATION_OPTIONS })}
+    ${fieldHtml({ key: 'earlyTerminationDetails', label: 'Early Termination Details', type: 'textarea', value: a.earlyTerminationDetails, full: true })}
+    ${fieldHtml({ key: 'schoolDistrict', label: 'School District', type: 'text', value: a.schoolDistrict })}
+    ${fieldHtml({ key: 'availabilityDate', label: 'Availability Date', type: 'date', value: a.availabilityDate })}
+    ${fieldHtml({ key: 'status', label: 'Status', type: 'select', value: a.status, options: APARTMENT_STATUSES })}
+    ${fieldHtml({ key: 'leasingCompany', label: 'Leasing Company Name', type: 'text', value: a.leasingCompany })}
+    ${fieldHtml({ key: 'contactEmail', label: 'Leasing Contact Email', type: 'email', value: a.contactEmail })}
+    ${fieldHtml({ key: 'contactPhone', label: 'Leasing Contact Phone', type: 'tel', value: a.contactPhone })}
+    ${fieldHtml({ key: 'tags', label: 'Tags (comma-separated)', type: 'text', value: (a.tags || []).join(', '), full: true })}
+    ${fieldHtml({ key: 'pros', label: 'Pros', type: 'textarea', value: a.pros, full: true })}
+    ${fieldHtml({ key: 'cons', label: 'Cons', type: 'textarea', value: a.cons, full: true })}
+    ${fieldHtml({ key: 'notes', label: 'Notes', type: 'textarea', value: a.notes, full: true })}
+  </div>`;
+  openModal(isNew ? 'Add Apartment' : 'Edit Apartment', body, {
+    onSave: () => {
+      const updated = {
+        id: a.id, name: val('name'), address: val('address'), city: val('city'), zip: val('zip'),
+        listingUrl: val('listingUrl'), rent: numVal('rent'), bedrooms: numVal('bedrooms'),
+        bathrooms: val('bathrooms'), sqft: numVal('sqft'), leaseTerm: val('leaseTerm'),
+        earlyTermination: val('earlyTermination'), earlyTerminationDetails: val('earlyTerminationDetails'),
+        schoolDistrict: val('schoolDistrict'), availabilityDate: val('availabilityDate'),
+        status: val('status'), leasingCompany: val('leasingCompany'), contactEmail: val('contactEmail'),
+        contactPhone: val('contactPhone'), pros: val('pros'), cons: val('cons'), notes: val('notes'),
+        tags: parseTags(val('tags')),
+      };
+      if (!updated.address) { alert('Address is required.'); return; }
+      if (isNew) { state.apartments.push(updated); logActivity('added', `Added apartment — ${updated.address}`); }
+      else { Object.assign(apartment, updated); logActivity('edited', `Edited apartment — ${updated.address}`); }
+      closeModal(); scheduleSave(); renderAll();
+    },
+    onDelete: isNew ? null : () => {
+      state.apartments = state.apartments.filter(x => x.id !== apartment.id);
+      logActivity('deleted', `Deleted apartment — ${apartment.address}`);
+      closeModal(); scheduleSave(); renderAll();
+    }
+  });
+}
+
 function openSchoolModal(school) {
   const isNew = !school;
   const s = school ? { ...school } : {
@@ -1547,10 +1899,12 @@ function renderAll() {
   renderWeightsGrid();
   renderDashboard();
   renderHouses();
+  renderApartments();
   renderSchools();
   renderTasks();
   renderCalendar();
   renderActivity();
+  renderMap();
 }
 
 function initTabs() {
@@ -1560,6 +1914,10 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'map') {
+        initMapTabOnce();
+        setTimeout(() => mapInstance && mapInstance.invalidateSize(), 0);
+      }
     });
   });
 }
@@ -1572,10 +1930,27 @@ function initToolbars() {
   document.getElementById('addHouseBtn').addEventListener('click', () => openHouseModal(null));
   document.getElementById('exportHousesBtn').addEventListener('click', exportHouses);
 
+  document.getElementById('apartmentSearch').addEventListener('input', renderApartments);
+  document.getElementById('apartmentStatusFilter').addEventListener('change', renderApartments);
+  document.getElementById('apartmentCityFilter').addEventListener('change', renderApartments);
+  document.getElementById('apartmentLeaseTermFilter').addEventListener('change', renderApartments);
+  document.getElementById('apartmentRentMaxFilter').addEventListener('input', renderApartments);
+  document.getElementById('addApartmentBtn').addEventListener('click', () => openApartmentModal(null));
+  document.getElementById('exportApartmentsBtn').addEventListener('click', exportApartments);
+
   document.getElementById('schoolSearch').addEventListener('input', renderSchools);
   document.getElementById('schoolTypeFilter').addEventListener('change', renderSchools);
+  document.getElementById('schoolCityFilter').addEventListener('change', renderSchools);
+  document.getElementById('schoolPriorityFilter').addEventListener('change', renderSchools);
+  document.getElementById('schoolCommuteMaxFilter').addEventListener('input', renderSchools);
+  document.getElementById('schoolMathMinFilter').addEventListener('input', renderSchools);
+  document.getElementById('schoolReadingMinFilter').addEventListener('input', renderSchools);
   document.getElementById('addSchoolBtn').addEventListener('click', () => openSchoolModal(null));
   document.getElementById('exportSchoolsBtn').addEventListener('click', exportSchools);
+
+  document.getElementById('geocodeAllBtn').addEventListener('click', geocodeAllMissing);
+  document.getElementById('distanceHouseSelect').addEventListener('change', renderDistancePanel);
+  document.getElementById('distanceSchoolSelect').addEventListener('change', renderDistancePanel);
 
   document.getElementById('taskSearch').addEventListener('input', renderTasks);
   document.getElementById('taskOwnerFilter').addEventListener('change', renderTasks);

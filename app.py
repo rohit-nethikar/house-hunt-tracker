@@ -16,8 +16,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from flask import Flask, Response, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "data.json"
@@ -391,6 +394,7 @@ def seed_state():
                 "notes": "Completed."
             }
         ],
+        "apartments": [],
         "weights": {
             "house": {"affordability": 30, "condition": 25, "commute": 25, "size": 20},
             "school": {"cspf": 30, "achievement": 25, "growth": 25, "transportation": 20},
@@ -658,6 +662,7 @@ def _geocode_google(address):
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": address, "key": GEOCODE_API_KEY},
         timeout=10,
+        verify=False,
     )
     data = resp.json()
     if data.get("status") != "OK" or not data.get("results"):
@@ -673,6 +678,7 @@ def _geocode_nominatim(address):
         params={"q": address, "format": "json", "limit": 1},
         headers={"User-Agent": "house-hunt-tracker/1.0 (personal local use)"},
         timeout=10,
+        verify=False,
     )
     results = resp.json()
     if not results:
@@ -710,6 +716,7 @@ def commute_time():
             "https://maps.googleapis.com/maps/api/distancematrix/json",
             params={"origins": origin, "destinations": destination, "key": GEOCODE_API_KEY},
             timeout=10,
+            verify=False,
         )
         data = resp.json()
     except requests.RequestException as e:
@@ -769,6 +776,7 @@ def import_listing():
             headers={"User-Agent": "Mozilla/5.0 (compatible; house-hunt-tracker/1.0; personal use)"},
             timeout=10,
             stream=True,
+            verify=False,
         )
         resp.raise_for_status()
         content = b""
