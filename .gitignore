@@ -44,3 +44,12 @@ update_*.py
 .env
 .env.local
 .env.*.local
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
