@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Logs
+*.log
+server.log
+app.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+backups/
+*.bak
+
+# Data population scripts (temporary)
+add_*.py
+remove_*.py
+clean_*.py
+update_*.py
+
+# Environment
+.env
+.env.local
+.env.*.local
