@@ -1,0 +1,8 @@
+{
+  "name": "Douglas County House Hunt & School Tracker",
+  "short_name": "House Hunt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#2a78d6"
+}

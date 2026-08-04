@@ -1,0 +1,418 @@
+{
+  "houses": [
+    {
+      "id": "h1",
+      "address": "9482 Wildflower Ct",
+      "listingUrl": "https://example.com/listing/9482-wildflower-ct",
+      "city": "Highlands Ranch",
+      "price": 615000,
+      "estMonthlyPayment": 3980,
+      "propertyTax": 4100,
+      "hoa": 95,
+      "sqft": 2450,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "lotSize": "0.18 acre",
+      "yearBuilt": 2001,
+      "condition": 4,
+      "requiredRepairs": "Furnace is original, may need replacement in 2-3 years.",
+      "elementarySchoolId": "s1",
+      "middleSchoolId": "s3",
+      "highSchoolId": "s5",
+      "commuteTimeMin": 32,
+      "showingDate": "2026-08-02",
+      "status": "Showing Scheduled",
+      "followUpDate": "2026-08-03",
+      "pros": "Fenced yard, finished basement, quiet cul-de-sac.",
+      "cons": "Kitchen needs updating, no garage EV outlet.",
+      "notes": "Neighbor mentioned HOA is planning a special assessment for the pool."
+    },
+    {
+      "id": "h2",
+      "address": "1207 Meadow Lark Dr",
+      "listingUrl": "https://example.com/listing/1207-meadow-lark-dr",
+      "city": "Parker",
+      "price": 549900,
+      "estMonthlyPayment": 3610,
+      "propertyTax": 3550,
+      "hoa": 60,
+      "sqft": 2100,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "lotSize": "0.15 acre",
+      "yearBuilt": 1998,
+      "condition": 3,
+      "requiredRepairs": "Roof is ~18 years old, needs inspection. Deck needs restaining.",
+      "elementarySchoolId": "s2",
+      "middleSchoolId": "s4",
+      "highSchoolId": "s6",
+      "commuteTimeMin": 41,
+      "showingDate": "2026-08-05",
+      "status": "Researching",
+      "followUpDate": "2026-07-31",
+      "pros": "Great price per sqft, large backyard, low HOA.",
+      "cons": "Longer commute, roof age is a concern.",
+      "notes": "Ask seller for roof inspection report before scheduling a showing."
+    },
+    {
+      "id": "h3",
+      "address": "5560 Prairie Hawk Way",
+      "listingUrl": "https://example.com/listing/5560-prairie-hawk-way",
+      "city": "Castle Rock",
+      "price": 674500,
+      "estMonthlyPayment": 4350,
+      "propertyTax": 4700,
+      "hoa": 0,
+      "sqft": 2800,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "lotSize": "0.25 acre",
+      "yearBuilt": 2015,
+      "condition": 5,
+      "requiredRepairs": "None known; move-in ready.",
+      "elementarySchoolId": "s2",
+      "middleSchoolId": "s4",
+      "highSchoolId": "s6",
+      "commuteTimeMin": 38,
+      "showingDate": "2026-08-01",
+      "status": "Showing Complete",
+      "followUpDate": "2026-08-04",
+      "pros": "No HOA, newer build, move-in ready, great school access.",
+      "cons": "Highest price of the group, smaller lot than expected.",
+      "notes": "Loved this one on the walkthrough. Discuss offer strategy."
+    },
+    {
+      "id": "h4",
+      "address": "8825 Timber Trail Ave",
+      "listingUrl": "https://example.com/listing/8825-timber-trail-ave",
+      "city": "Lone Tree",
+      "price": 725000,
+      "estMonthlyPayment": 4690,
+      "propertyTax": 5100,
+      "hoa": 140,
+      "sqft": 2650,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "lotSize": "0.16 acre",
+      "yearBuilt": 2008,
+      "condition": 4,
+      "requiredRepairs": "Water heater original to house, budget for replacement.",
+      "elementarySchoolId": "s1",
+      "middleSchoolId": "s3",
+      "highSchoolId": "s5",
+      "commuteTimeMin": 27,
+      "showingDate": "2026-08-09",
+      "status": "Researching",
+      "followUpDate": "2026-08-06",
+      "pros": "Shortest commute, walkable to light rail, strong resale area.",
+      "cons": "Highest HOA, above target budget.",
+      "notes": "Stretch budget option; only pursue if h1/h3 fall through."
+    },
+    {
+      "id": "h5",
+      "address": "3391 Bell Mountain Cir",
+      "listingUrl": "https://example.com/listing/3391-bell-mountain-cir",
+      "city": "Castle Pines",
+      "price": 599000,
+      "estMonthlyPayment": 3870,
+      "propertyTax": 3900,
+      "hoa": 80,
+      "sqft": 2300,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "lotSize": "0.14 acre",
+      "yearBuilt": 2003,
+      "condition": 3,
+      "requiredRepairs": "Carpet throughout needs replacing, minor drywall cracks.",
+      "elementarySchoolId": "s2",
+      "middleSchoolId": "s4",
+      "highSchoolId": "s6",
+      "commuteTimeMin": 35,
+      "showingDate": "",
+      "status": "Rejected",
+      "followUpDate": "",
+      "pros": "Good price, decent layout.",
+      "cons": "Needs cosmetic work throughout, smallest bedrooms in the group.",
+      "notes": "Passed after showing - layout felt cramped in person."
+    }
+  ],
+  "schools": [
+    {
+      "id": "s1",
+      "name": "Northridge Elementary School",
+      "type": "Elementary",
+      "gradesServed": "K-5",
+      "curriculumModel": "Traditional",
+      "cspfRating": "Accredited",
+      "academicAchievement": 68,
+      "academicGrowth": 72,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "Boundary",
+      "applicationDeadline": "",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-14",
+      "distances": [
+        {
+          "houseId": "h1",
+          "miles": 0.9
+        },
+        {
+          "houseId": "h4",
+          "miles": 1.4
+        }
+      ],
+      "pros": "Walkable for most of the boundary, active PTA.",
+      "cons": "Portables in use due to enrollment growth.",
+      "notes": ""
+    },
+    {
+      "id": "s2",
+      "name": "Buffalo Ridge Elementary School",
+      "type": "Elementary",
+      "gradesServed": "K-5",
+      "curriculumModel": "Traditional",
+      "cspfRating": "Distinguished",
+      "academicAchievement": 81,
+      "academicGrowth": 76,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "Boundary",
+      "applicationDeadline": "",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-12",
+      "distances": [
+        {
+          "houseId": "h2",
+          "miles": 1.1
+        },
+        {
+          "houseId": "h3",
+          "miles": 0.6
+        },
+        {
+          "houseId": "h5",
+          "miles": 1.8
+        }
+      ],
+      "pros": "Top CSPF rating in the area, strong STEM program.",
+      "cons": "Larger class sizes reported by current parents.",
+      "notes": ""
+    },
+    {
+      "id": "s3",
+      "name": "Sagewood Middle School",
+      "type": "Middle",
+      "gradesServed": "6-8",
+      "curriculumModel": "Traditional",
+      "cspfRating": "Accredited",
+      "academicAchievement": 64,
+      "academicGrowth": 66,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "Boundary",
+      "applicationDeadline": "",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-14",
+      "distances": [
+        {
+          "houseId": "h1",
+          "miles": 1.6
+        },
+        {
+          "houseId": "h4",
+          "miles": 2.1
+        }
+      ],
+      "pros": "Well-regarded band and robotics programs.",
+      "cons": "Aging building, renovation not yet scheduled.",
+      "notes": ""
+    },
+    {
+      "id": "s4",
+      "name": "Mesa Middle School",
+      "type": "Middle",
+      "gradesServed": "6-8",
+      "curriculumModel": "Traditional",
+      "cspfRating": "Accredited",
+      "academicAchievement": 70,
+      "academicGrowth": 69,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "Boundary",
+      "applicationDeadline": "",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-13",
+      "distances": [
+        {
+          "houseId": "h2",
+          "miles": 1.3
+        },
+        {
+          "houseId": "h3",
+          "miles": 0.8
+        },
+        {
+          "houseId": "h5",
+          "miles": 2.0
+        }
+      ],
+      "pros": "Newer facility, solid math scores.",
+      "cons": "Limited elective variety compared to Sagewood.",
+      "notes": ""
+    },
+    {
+      "id": "s5",
+      "name": "Mountain Vista High School",
+      "type": "High",
+      "gradesServed": "9-12",
+      "curriculumModel": "Traditional + IB pathway",
+      "cspfRating": "Distinguished",
+      "academicAchievement": 79,
+      "academicGrowth": 71,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "Boundary",
+      "applicationDeadline": "",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-20",
+      "distances": [
+        {
+          "houseId": "h1",
+          "miles": 2.2
+        },
+        {
+          "houseId": "h4",
+          "miles": 1.9
+        }
+      ],
+      "pros": "IB program, strong AP course catalog, large athletics program.",
+      "cons": "Very large school (2,000+ students).",
+      "notes": ""
+    },
+    {
+      "id": "s6",
+      "name": "Legend High School",
+      "type": "High",
+      "gradesServed": "9-12",
+      "curriculumModel": "Traditional",
+      "cspfRating": "Accredited",
+      "academicAchievement": 73,
+      "academicGrowth": 68,
+      "transportation": "Bus Provided",
+      "enrollmentMethod": "School Choice",
+      "applicationDeadline": "2027-02-01",
+      "waitlistStatus": "None",
+      "tourDate": "2026-08-19",
+      "distances": [
+        {
+          "houseId": "h2",
+          "miles": 2.6
+        },
+        {
+          "houseId": "h3",
+          "miles": 1.7
+        },
+        {
+          "houseId": "h5",
+          "miles": 3.1
+        }
+      ],
+      "pros": "Strong career/tech education pathways, newer athletic facilities.",
+      "cons": "School-choice seats fill up fast for out-of-boundary families.",
+      "notes": "Since this is school-choice rather than boundary, confirm h3/h5 boundary status before counting on it."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "task": "Follow up with listing agent on 1207 Meadow Lark Dr roof inspection",
+      "relatedType": "House",
+      "relatedId": "h2",
+      "owner": "Alex",
+      "dueDate": "2026-07-31",
+      "status": "Not Started",
+      "priority": "High",
+      "notes": ""
+    },
+    {
+      "id": "t2",
+      "task": "Submit pre-approval update to lender with latest pay stubs",
+      "relatedType": "General",
+      "relatedId": "",
+      "owner": "Jordan",
+      "dueDate": "2026-08-01",
+      "status": "In Progress",
+      "priority": "High",
+      "notes": "Needed before we can make a competitive offer."
+    },
+    {
+      "id": "t3",
+      "task": "Book school tour for Northridge Elementary",
+      "relatedType": "School",
+      "relatedId": "s1",
+      "owner": "Alex",
+      "dueDate": "2026-08-10",
+      "status": "Not Started",
+      "priority": "Medium",
+      "notes": "Tour already scheduled for 2026-08-14, just needs RSVP confirmation."
+    },
+    {
+      "id": "t4",
+      "task": "Decide on offer for 5560 Prairie Hawk Way",
+      "relatedType": "House",
+      "relatedId": "h3",
+      "owner": "Jordan",
+      "dueDate": "2026-08-04",
+      "status": "Not Started",
+      "priority": "High",
+      "notes": "Top pick so far - discuss max offer price together first."
+    },
+    {
+      "id": "t5",
+      "task": "Order home inspection for 9482 Wildflower Ct if showing goes well",
+      "relatedType": "House",
+      "relatedId": "h1",
+      "owner": "Alex",
+      "dueDate": "2026-08-06",
+      "status": "Not Started",
+      "priority": "Medium",
+      "notes": ""
+    },
+    {
+      "id": "t6",
+      "task": "Confirm Legend HS school-choice boundary rules with DCSD enrollment office",
+      "relatedType": "School",
+      "relatedId": "s6",
+      "owner": "Jordan",
+      "dueDate": "2026-07-30",
+      "status": "Not Started",
+      "priority": "Medium",
+      "notes": ""
+    },
+    {
+      "id": "t7",
+      "task": "Send thank-you note after Castle Rock showing",
+      "relatedType": "House",
+      "relatedId": "h3",
+      "owner": "Alex",
+      "dueDate": "2026-07-20",
+      "status": "Done",
+      "priority": "Low",
+      "notes": "Completed."
+    }
+  ],
+  "weights": {
+    "house": {
+      "affordability": 30,
+      "condition": 25,
+      "commute": 25,
+      "size": 20
+    },
+    "school": {
+      "cspf": 30,
+      "achievement": 25,
+      "growth": 25,
+      "transportation": 20
+    },
+    "enrollment": {
+      "method": 60,
+      "waitlist": 40
+    }
+  }
+}

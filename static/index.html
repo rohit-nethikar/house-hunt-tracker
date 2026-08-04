@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Douglas County House Hunt Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a78d6">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Douglas County House Hunt &amp; School Tracker</h1>
+  <div class="header-actions">
+    <div class="global-search-wrap">
+      <input type="text" id="globalSearch" placeholder="Search everything…" autocomplete="off">
+      <div id="globalSearchResults" class="global-search-results hidden"></div>
+    </div>
+    <input type="text" id="actingAsInput" class="acting-as-input" placeholder="Acting as…" title="Your name — tags entries in the Activity log">
+    <div class="save-status" id="saveStatus">All changes saved</div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="houses">Houses</button>
+  <button class="tab-btn" data-tab="schools">Schools</button>
+  <button class="tab-btn" data-tab="tasks">Tasks</button>
+  <button class="tab-btn" data-tab="calendar">Calendar</button>
+  <button class="tab-btn" data-tab="activity">Activity</button>
+</nav>
+
+<main id="app">
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section id="tab-dashboard" class="tab-panel active">
+
+    <div id="reminderBanner" class="reminder-banner"></div>
+
+    <div class="dash-grid">
+      <div class="card">
+        <h2>Houses by Status</h2>
+        <div id="statusChart" class="bar-chart"></div>
+      </div>
+
+      <div class="card">
+        <h2>Upcoming Showings &amp; Tours <span class="muted-note">(next 30 days)</span></h2>
+        <div id="upcomingList" class="list-block"></div>
+      </div>
+
+      <div class="card">
+        <h2>Overdue Follow-ups</h2>
+        <div id="overdueList" class="list-block"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Scoring Weights <span class="muted-note">— adjust and every score recalculates live</span></h2>
+      <p class="calc-explainer">
+        Three scores are kept separate on purpose: <strong>House Score</strong> (is the house itself a good fit),
+        <strong>School Score</strong> (is the assigned school strong), and <strong>Enrollment Probability</strong>
+        (how likely you are to actually get a seat there). They are never blended into one number — see the
+        "How is this calculated?" toggle on each table row for the exact math.
+      </p>
+      <div class="preset-bar" id="presetBar"></div>
+      <div class="weights-grid" id="weightsGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Integrations <span class="muted-note">— all optional, everything above still works without these</span></h2>
+      <div class="form-field full" style="margin-bottom:10px;">
+        <label for="commuteDestinationInput">Commute destination address <span class="muted-note">(used by "Refresh Commute Time" on each house)</span></label>
+        <input type="text" id="commuteDestinationInput" placeholder="e.g. 123 Office Blvd, Denver, CO">
+      </div>
+      <div id="integrationsStatus" class="muted-note"></div>
+    </div>
+
+    <div class="dash-grid two-col">
+      <div class="card">
+        <h2>Top 5 Houses by House Score</h2>
+        <div id="topHousesTable"></div>
+      </div>
+      <div class="card">
+        <h2>Top 5 House + School Combinations</h2>
+        <div class="filter-bar">
+          <label>Sort by
+            <select id="comboSortBy">
+              <option value="houseScore">House Score</option>
+              <option value="schoolScore">School Score</option>
+              <option value="enrollmentProb">Enrollment Probability</option>
+              <option value="distance">Distance (closest first)</option>
+            </select>
+          </label>
+        </div>
+        <div id="comboTable"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Side-by-Side House Comparison</h2>
+      <div class="toolbar">
+        <button class="btn" id="printCompareBtn">Print Comparison Report</button>
+      </div>
+      <div id="compareSelect" class="compare-select"></div>
+      <div id="compareRadar" class="compare-radar"></div>
+      <div id="compareTable" class="compare-table-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== HOUSES ===================== -->
+  <section id="tab-houses" class="tab-panel">
+    <div class="toolbar">
+      <input type="text" id="houseSearch" placeholder="Search address, city, notes…">
+      <select id="houseStatusFilter"><option value="">All statuses</option></select>
+      <select id="houseCityFilter"><option value="">All cities</option></select>
+      <select id="houseTagFilter"><option value="">All tags</option></select>
+      <button class="btn primary" id="addHouseBtn">+ Add House</button>
+      <button class="btn" id="exportHousesBtn">Export CSV</button>
+    </div>
+    <div id="housesTable" class="table-wrap"></div>
+  </section>
+
+  <!-- ===================== SCHOOLS ===================== -->
+  <section id="tab-schools" class="tab-panel">
+    <div class="toolbar">
+      <input type="text" id="schoolSearch" placeholder="Search name, notes…">
+      <select id="schoolTypeFilter"><option value="">All types</option></select>
+      <button class="btn primary" id="addSchoolBtn">+ Add School</button>
+      <button class="btn" id="exportSchoolsBtn">Export CSV</button>
+    </div>
+    <div id="schoolsTable" class="table-wrap"></div>
+  </section>
+
+  <!-- ===================== TASKS ===================== -->
+  <section id="tab-tasks" class="tab-panel">
+    <div class="toolbar">
+      <input type="text" id="taskSearch" placeholder="Search task, notes…">
+      <select id="taskOwnerFilter"><option value="">All owners</option></select>
+      <select id="taskStatusFilter"><option value="">All statuses</option></select>
+      <select id="taskPriorityFilter"><option value="">All priorities</option></select>
+      <button class="btn primary" id="addTaskBtn">+ Add Task</button>
+      <button class="btn" id="exportTasksBtn">Export CSV</button>
+    </div>
+    <div class="legend-row">
+      <span class="legend-chip overdue">Overdue</span>
+      <span class="legend-chip due-soon">Due within 7 days</span>
+    </div>
+    <div id="tasksTable" class="table-wrap"></div>
+  </section>
+
+  <!-- ===================== CALENDAR ===================== -->
+  <section id="tab-calendar" class="tab-panel">
+    <div class="toolbar">
+      <button class="btn" id="calPrevBtn">&larr; Prev</button>
+      <button class="btn" id="calTodayBtn">Today</button>
+      <button class="btn" id="calNextBtn">Next &rarr;</button>
+      <h2 id="calMonthLabel" class="cal-month-label"></h2>
+      <button class="btn" id="exportIcsBtn" style="margin-left:auto;">Export Calendar (.ics)</button>
+    </div>
+    <div class="legend-row">
+      <span class="legend-chip" style="background:var(--series-2);color:#fff;">Showing</span>
+      <span class="legend-chip" style="background:var(--series-7);color:#fff;">Follow-up</span>
+      <span class="legend-chip" style="background:var(--series-3);color:#fff;">Tour</span>
+      <span class="legend-chip" style="background:var(--series-1);color:#fff;">Task Due</span>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+  </section>
+
+  <!-- ===================== ACTIVITY ===================== -->
+  <section id="tab-activity" class="tab-panel">
+    <div class="toolbar">
+      <span class="muted-note">Most recent changes across houses, schools, and tasks (last 300).</span>
+    </div>
+    <div id="activityList" class="list-block"></div>
+  </section>
+
+</main>
+
+<div id="modalRoot" class="modal-root hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Edit</h3>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn danger hidden" id="modalDeleteBtn">Delete</button>
+      <div class="modal-footer-right">
+        <button class="btn" id="modalCancelBtn">Cancel</button>
+        <button class="btn primary" id="modalSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
