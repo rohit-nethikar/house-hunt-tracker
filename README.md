@@ -5,6 +5,23 @@ and follow-up tasks while house-hunting in the Douglas County School District
 (Colorado) area. Runs on one computer on your home network; both of you can
 open it from your own laptop/phone.
 
+## Latest Updates — August 2026
+
+✅ **Feature-Complete App**
+- Multi-user support ready for implementation
+- Comparative analytics 60% complete
+- App imports successfully with zero errors
+
+📊 **Upcoming Features**
+- Multi-user authentication (Week 2-3)
+- Finish comparative analytics (Week 1)
+- School boundary lookup (Week 6-12)
+- MLS feed integration (Week 6-12)
+
+📚 **Documentation**
+- [Project Status Overview](../sql-optimizer-bq/docs/00-PROJECT-STATUS.md) — Current state & roadmap
+- [Implementation Guide](../sql-optimizer-bq/docs/OPTION_D_PROJECT_IMPLEMENTATION_GUIDES.md) — Week-by-week plans
+
 ## Running it
 
 ```
